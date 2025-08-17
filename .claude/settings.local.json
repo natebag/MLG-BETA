@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm install)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run lint)",
+      "Bash(npm audit:*)",
+      "Bash(rmdir:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
