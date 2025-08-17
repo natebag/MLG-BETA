@@ -11,6 +11,7 @@ interface UserContextType {
   logout: () => void;
   gamerscore: number;
   updateGamerscore: (points: number) => void;
+  createProfile: (gamertag: string, bio?: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
@@ -145,6 +146,57 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
+  const createProfile = async (gamertag: string, bio?: string) => {
+    if (!publicKey) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const walletAddress = publicKey.toString();
+
+      // Check if gamertag is already taken
+      const { data: existingGamertag } = await supabase
+        .from('users')
+        .select('id')
+        .eq('gamertag', gamertag)
+        .single();
+
+      if (existingGamertag) {
+        toast.error('Gamertag already taken');
+        return;
+      }
+
+      // Create new user profile
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert({
+          wallet_address: walletAddress,
+          gamertag: gamertag,
+          bio: bio || '',
+          gamerscore: 0,
+          total_clips: 0,
+          total_votes: 0,
+          login_streak: 1,
+          last_login: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setUser(newUser);
+      setGamerscore(0);
+      toast.success('Profile created successfully!');
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      toast.error('Failed to create profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <UserContext.Provider value={{ 
       user, 
@@ -153,7 +205,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       refreshUser, 
       logout,
       gamerscore,
-      updateGamerscore
+      updateGamerscore,
+      createProfile
     }}>
       {children}
     </UserContext.Provider>

@@ -19,11 +19,61 @@ import { ClipsProvider } from './contexts/ClipsContext';
 import { ChatProvider } from './contexts/ChatContext';
 import Chat from './components/Chat';
 import UserProfileModal from './components/UserProfileModal';
+import CreateProfileModal from './components/CreateProfileModal';
 import { supabase } from './lib/supabase';
 import { Toaster } from 'react-hot-toast';
+import { useUser } from './contexts/UserContext';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 // Import Solana wallet CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
+
+// Component that needs to be inside UserProvider
+const AppContent = () => {
+  const { user, loading } = useUser();
+  const { connected } = useWallet();
+  const [showCreateProfile, setShowCreateProfile] = useState(false);
+
+  useEffect(() => {
+    // Show profile creation modal if wallet is connected but no user profile exists
+    if (connected && !loading && !user) {
+      setShowCreateProfile(true);
+    } else {
+      setShowCreateProfile(false);
+    }
+  }, [connected, user, loading]);
+
+  return (
+    <div className="bg-gradient-to-br from-gray-900 via-green-900 to-black text-white min-h-screen">
+      <Header />
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/vote-vault" element={<VoteVaultPage />} />
+          <Route path="/clan" element={<ClanPage />} />
+          <Route path="/roster" element={<RosterPage />} />
+          <Route path="/upload" element={<UploadPage />} />
+          <Route path="/achievements" element={<AchievementsPage />} />
+          <Route path="/tournaments" element={<TournamentsPage />} />
+        </Routes>
+      </main>
+      <Chat />
+      <UserProfileModal />
+      <CreateProfileModal 
+        isOpen={showCreateProfile} 
+        onClose={() => setShowCreateProfile(false)} 
+      />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          className: 'bg-gray-800 text-white',
+          duration: 4000,
+        }}
+      />
+    </div>
+  );
+};
 
 function App() {
   // Check if Supabase is properly configured
@@ -81,30 +131,7 @@ function App() {
               <ClipsProvider>
                 <ChatProvider>
                   <Router>
-                    <div className="bg-gradient-to-br from-gray-900 via-green-900 to-black text-white min-h-screen">
-                      <Header />
-                      <main>
-                        <Routes>
-                          <Route path="/" element={<HomePage />} />
-                          <Route path="/profile" element={<ProfilePage />} />
-                          <Route path="/vote-vault" element={<VoteVaultPage />} />
-                          <Route path="/clan" element={<ClanPage />} />
-                          <Route path="/roster" element={<RosterPage />} />
-                          <Route path="/upload" element={<UploadPage />} />
-                          <Route path="/achievements" element={<AchievementsPage />} />
-                          <Route path="/tournaments" element={<TournamentsPage />} />
-                        </Routes>
-                      </main>
-                      <Chat />
-                      <UserProfileModal />
-                      <Toaster 
-                        position="top-right"
-                        toastOptions={{
-                          className: 'bg-gray-800 text-white',
-                          duration: 4000,
-                        }}
-                      />
-                    </div>
+                    <AppContent />
                   </Router>
                 </ChatProvider>
               </ClipsProvider>
