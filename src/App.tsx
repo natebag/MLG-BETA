@@ -16,6 +16,7 @@ import TournamentsPage from './pages/TournamentsPage';
 import { UserProvider } from './contexts/UserContext';
 import { ClipsProvider } from './contexts/ClipsContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { VotingProvider } from './contexts/VotingContext';
 import Chat from './components/Chat';
 import UserProfileModal from './components/UserProfileModal';
 import CreateProfileModal from './components/CreateProfileModal';
@@ -130,9 +131,11 @@ function App() {
             <UserProvider>
               <ClipsProvider>
                 <ChatProvider>
-                  <Router>
-                    <AppContent />
-                  </Router>
+                  <VotingProvider>
+                    <Router>
+                      <AppContent />
+                    </Router>
+                  </VotingProvider>
                 </ChatProvider>
               </ClipsProvider>
             </UserProvider>
