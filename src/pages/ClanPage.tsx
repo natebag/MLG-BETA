@@ -10,6 +10,9 @@ const ClanPage: React.FC = () => {
   const [mlgMembers, setMlgMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [globalSearchResults, setGlobalSearchResults] = useState<{users: User[], clans: any[]}>({users: [], clans: []});
+  const [searchLoading, setSearchLoading] = useState(false);
   const [clanStats, setClanStats] = useState({
     totalMembers: 0,
     totalClips: 0,
@@ -85,6 +88,49 @@ const ClanPage: React.FC = () => {
     }
   };
 
+  const performGlobalSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setGlobalSearchResults({users: [], clans: []});
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      
+      // Search users
+      const { data: users } = await supabase
+        .from('users')
+        .select('*')
+        .or(`gamertag.ilike.%${searchQuery}%,bio.ilike.%${searchQuery}%`)
+        .order('gamerscore', { ascending: false })
+        .limit(10);
+
+      // Search clans
+      const { data: clans } = await supabase
+        .from('clans')
+        .select('*')
+        .or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
+        .limit(5);
+
+      setGlobalSearchResults({
+        users: users || [],
+        clans: clans || []
+      });
+    } catch (error) {
+      console.error('Error performing global search:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      performGlobalSearch(globalSearchTerm);
+    }, 300); // Debounce search
+
+    return () => clearTimeout(timeoutId);
+  }, [globalSearchTerm]);
+
   // Filter members based on search
   const filteredMembers = mlgMembers.filter(member =>
     member.gamertag.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,6 +143,85 @@ const ClanPage: React.FC = () => {
         <Crown />
         MLG Clan Hub
       </h1>
+
+      {/* Global Search */}
+      <div className="bg-gradient-to-br from-blue-900 to-blue-800 border border-blue-600 p-6 rounded-lg mb-6">
+        <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+          <Search />
+          Find Players & Clans
+        </h2>
+        
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search for players or clans..."
+            value={globalSearchTerm}
+            onChange={(e) => setGlobalSearchTerm(e.target.value)}
+            className="w-full bg-gray-700 text-white pl-10 pr-4 py-3 rounded-lg border border-gray-600 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        {globalSearchTerm && (
+          <div className="space-y-4">
+            {searchLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mx-auto"></div>
+              </div>
+            ) : (
+              <>
+                {globalSearchResults.clans.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-300 mb-2">Clans ({globalSearchResults.clans.length})</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {globalSearchResults.clans.map((clan) => (
+                        <div key={clan.id} className="bg-gray-700 p-3 rounded-lg">
+                          <div className="font-bold text-sm text-purple-400">[{clan.name.split(' ').map(w => w[0]).join('')}]</div>
+                          <div className="text-sm">{clan.name}</div>
+                          <div className="text-xs text-gray-400">{clan.members?.length || 0} members</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {globalSearchResults.users.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-300 mb-2">Players ({globalSearchResults.users.length})</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {globalSearchResults.users.map((searchUser) => (
+                        <div
+                          key={searchUser.id}
+                          onClick={() => handleMemberClick(searchUser.id)}
+                          className="bg-gray-700 hover:bg-gray-600 p-3 rounded-lg cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-purple-400 font-bold text-xs">[MLG]</div>
+                            <div className="text-yellow-400 font-bold text-xs flex items-center gap-1">
+                              <Trophy size={12} />
+                              {searchUser.gamerscore || 0}G
+                            </div>
+                          </div>
+                          <div className="font-bold text-sm">{searchUser.gamertag}</div>
+                          <div className="text-xs text-gray-400 truncate">
+                            {searchUser.bio || 'No bio set'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {globalSearchResults.users.length === 0 && globalSearchResults.clans.length === 0 && !searchLoading && (
+                  <div className="text-center py-4 text-gray-400">
+                    No players or clans found matching "{globalSearchTerm}"
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="bg-gradient-to-br from-green-900 to-green-800 border border-green-600 p-6 rounded-lg">
         <h2 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
@@ -125,15 +250,8 @@ const ClanPage: React.FC = () => {
               <Users />
               MLG Roster ({filteredMembers.length})
             </h3>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search players..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-gray-800 text-white pl-10 pr-4 py-2 rounded-lg border border-gray-600 focus:border-green-400 focus:outline-none"
-              />
+            <div className="text-sm text-gray-400">
+              Click any [MLG] tag throughout the site to see this roster!
             </div>
           </div>
 

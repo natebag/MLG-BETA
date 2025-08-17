@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useClips } from '../contexts/ClipsContext';
 import { useUser } from '../contexts/UserContext';
 import { openUserProfile } from '../components/UserProfileModal';
+import { openClanMembers } from '../components/ClanMembersModal';
 import { Search, SortDesc, Play, ThumbsUp, Heart, ExternalLink } from 'lucide-react';
 
 const VoteVaultPage: React.FC = () => {
@@ -29,6 +30,11 @@ const VoteVaultPage: React.FC = () => {
       tag: '[MLG]',
       color: 'text-purple-400'
     };
+  };
+
+  const handleClanTagClick = () => {
+    const clanInfo = getClanInfo();
+    openClanMembers('Major League Gaming', clanInfo.tag, clanInfo.color);
   };
 
   // Filter and sort clips
@@ -118,7 +124,12 @@ const VoteVaultPage: React.FC = () => {
                 <p className="text-sm text-gray-400 mb-1">{clip.game}</p>
                 <p className="text-xs text-green-400 mb-3">
                   by{' '}
-                  <span className={clanInfo.color}>{clanInfo.tag}</span>
+                  <button
+                    onClick={handleClanTagClick}
+                    className={`${clanInfo.color} hover:underline cursor-pointer`}
+                  >
+                    {clanInfo.tag}
+                  </button>
                   {' '}
                   <button
                     onClick={() => handleUsernameClick(clip.uploader_id)}

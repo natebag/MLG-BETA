@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useUser } from '../contexts/UserContext';
+import { openClanMembers } from './ClanMembersModal';
 import { Crown, Users, MessageCircle, Trophy } from 'lucide-react';
 
 const Header: React.FC = () => {
@@ -27,6 +28,11 @@ const Header: React.FC = () => {
       tag: '[MLG]',
       color: 'text-purple-400'
     };
+  };
+
+  const handleClanTagClick = () => {
+    const clanInfo = getClanInfo();
+    openClanMembers('Major League Gaming', clanInfo.tag, clanInfo.color);
   };
 
   return (
@@ -58,7 +64,12 @@ const Header: React.FC = () => {
                   <span className="text-2xl">🎮</span>
                   <div className="text-left">
                     <div className="font-bold text-sm flex items-center">
-                      <span className={`${getClanInfo().color} mr-1`}>{getClanInfo().tag}</span>
+                      <button
+                        onClick={handleClanTagClick}
+                        className={`${getClanInfo().color} mr-1 hover:underline cursor-pointer`}
+                      >
+                        {getClanInfo().tag}
+                      </button>
                       <span>{user.gamertag}</span>
                     </div>
                     <div className="text-xs text-gray-300">

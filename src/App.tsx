@@ -19,6 +19,7 @@ import { ChatProvider } from './contexts/ChatContext';
 import Chat from './components/Chat';
 import UserProfileModal from './components/UserProfileModal';
 import CreateProfileModal from './components/CreateProfileModal';
+import ClanMembersModal from './components/ClanMembersModal';
 import { supabase } from './lib/supabase';
 import { Toaster } from 'react-hot-toast';
 import { useUser } from './contexts/UserContext';
@@ -58,6 +59,7 @@ const AppContent = () => {
       </main>
       <Chat />
       <UserProfileModal />
+      <ClanMembersModal />
       <CreateProfileModal 
         isOpen={showCreateProfile} 
         onClose={() => setShowCreateProfile(false)} 
