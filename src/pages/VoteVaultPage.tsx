@@ -9,12 +9,20 @@ import { Search, SortDesc, Play, ThumbsUp, Heart, ExternalLink, Coins, Zap } fro
 const VoteVaultPage: React.FC = () => {
   const { clips, likeClip, loading } = useClips();
   const { user } = useUser();
-  const { votesUsedToday, maxFreeVotes, mlgTokenBalance, canVoteFree, voteOnClip, loading: votingLoading } = useVoting();
+  const { votesUsedToday, maxFreeVotes, mlgTokenBalance, canVoteFree, hasUsedFreeVoteOnClip, voteOnClip, loading: votingLoading } = useVoting();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('votes-desc');
+  const [freeVoteStatus, setFreeVoteStatus] = useState<{[clipId: string]: boolean}>({});
 
   const handleVote = async (clipId: string, isPaid: boolean = false) => {
-    await voteOnClip(clipId, isPaid);
+    const success = await voteOnClip(clipId, isPaid);
+    if (success && !isPaid) {
+      // Update free vote status for this clip
+      setFreeVoteStatus(prev => ({
+        ...prev,
+        [clipId]: true
+      }));
+    }
   };
 
   const handleLike = async (clipId: string) => {
@@ -38,6 +46,20 @@ const VoteVaultPage: React.FC = () => {
     const clanInfo = getClanInfo();
     openClanMembers('Major League Gaming', clanInfo.tag, clanInfo.color);
   };
+
+  // Load free vote status for all clips when user or clips change
+  React.useEffect(() => {
+    if (user && clips.length > 0) {
+      const loadFreeVoteStatus = async () => {
+        const statusMap: {[clipId: string]: boolean} = {};
+        for (const clip of clips) {
+          statusMap[clip.id] = await hasUsedFreeVoteOnClip(clip.id);
+        }
+        setFreeVoteStatus(statusMap);
+      };
+      loadFreeVoteStatus();
+    }
+  }, [user, clips, hasUsedFreeVoteOnClip]);
 
   // Filter and sort clips
   const filteredAndSortedClips = React.useMemo(() => {
@@ -135,10 +157,10 @@ const VoteVaultPage: React.FC = () => {
       {filteredAndSortedClips.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAndSortedClips.map((clip) => {
-            const hasVoted = user && clip.voters.includes(user.id);
             const hasLiked = user && clip.likers.includes(user.id);
             const isOwner = user && clip.uploader_id === user.id;
             const clanInfo = getClanInfo();
+            const hasUsedFreeVote = freeVoteStatus[clip.id] || false;
 
             return (
               <div
@@ -221,28 +243,34 @@ const VoteVaultPage: React.FC = () => {
                       {/* Free Vote Button */}
                       <button
                         onClick={() => handleVote(clip.id, false)}
-                        disabled={hasVoted || !canVoteFree() || votingLoading}
+                        disabled={hasUsedFreeVote || !canVoteFree() || votingLoading}
                         className={`px-3 py-2 rounded text-sm transition-colors flex items-center gap-1 ${
-                          hasVoted || !canVoteFree()
+                          hasUsedFreeVote || !canVoteFree()
                             ? 'bg-gray-600 cursor-not-allowed opacity-50'
                             : 'bg-blue-600 hover:bg-blue-500'
                         }`}
-                        title={!canVoteFree() ? 'No free votes remaining' : 'Free vote'}
+                        title={
+                          hasUsedFreeVote 
+                            ? 'You already used your free vote on this clip' 
+                            : !canVoteFree() 
+                            ? 'No free votes remaining today' 
+                            : 'Free vote'
+                        }
                       >
                         <ThumbsUp size={16} />
                         <Zap size={12} />
                       </button>
                       
-                      {/* Paid Vote Button */}
+                      {/* Paid Vote Button - Can be used multiple times */}
                       <button
                         onClick={() => handleVote(clip.id, true)}
-                        disabled={hasVoted || mlgTokenBalance < 1 || votingLoading}
+                        disabled={mlgTokenBalance < 1 || votingLoading}
                         className={`px-3 py-2 rounded text-sm transition-colors flex items-center gap-1 ${
-                          hasVoted || mlgTokenBalance < 1
+                          mlgTokenBalance < 1
                             ? 'bg-gray-600 cursor-not-allowed opacity-50'
                             : 'bg-purple-600 hover:bg-purple-500'
                         }`}
-                        title={mlgTokenBalance < 1 ? 'Need 1 MLG token' : 'Vote with 1 MLG token'}
+                        title={mlgTokenBalance < 1 ? 'Need 1 MLG token' : 'Vote with 1 MLG token (unlimited)'}
                       >
                         <ThumbsUp size={16} />
                         <Coins size={12} />

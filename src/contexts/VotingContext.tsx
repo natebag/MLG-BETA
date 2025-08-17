@@ -10,6 +10,7 @@ interface VotingContextType {
   maxFreeVotes: number;
   mlgTokenBalance: number;
   canVoteFree: () => boolean;
+  hasUsedFreeVoteOnClip: (clipId: string) => Promise<boolean>;
   voteOnClip: (clipId: string, isPaid?: boolean) => Promise<boolean>;
   refreshVotingData: () => Promise<void>;
   loading: boolean;
@@ -106,6 +107,25 @@ export const VotingProvider: React.FC<VotingProviderProps> = ({ children }) => {
     return votesUsedToday < maxFreeVotes;
   };
 
+  const hasUsedFreeVoteOnClip = async (clipId: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data: existingFreeVote } = await supabase
+        .from('vote_history')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('clip_id', clipId)
+        .eq('vote_type', 'free')
+        .single();
+
+      return !!existingFreeVote;
+    } catch (error) {
+      console.error('Error checking free vote status:', error);
+      return false;
+    }
+  };
+
   const voteOnClip = async (clipId: string, isPaid: boolean = false): Promise<boolean> => {
     if (!user || !publicKey) {
       toast.error('Please connect your wallet!');
@@ -115,23 +135,26 @@ export const VotingProvider: React.FC<VotingProviderProps> = ({ children }) => {
     try {
       setLoading(true);
 
-      // Check if user already voted on this clip
-      const { data: existingVote } = await supabase
-        .from('vote_history')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('clip_id', clipId)
-        .single();
+      // For free votes, check if user already used free vote on this clip
+      if (!isPaid) {
+        const { data: existingFreeVote } = await supabase
+          .from('vote_history')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('clip_id', clipId)
+          .eq('vote_type', 'free')
+          .single();
 
-      if (existingVote) {
-        toast.error('You have already voted on this clip!');
-        return false;
-      }
+        if (existingFreeVote) {
+          toast.error('You have already used your free vote on this clip! Use MLG tokens for additional votes.');
+          return false;
+        }
 
-      // Check voting eligibility
-      if (!isPaid && !canVoteFree()) {
-        toast.error(`You've used all ${maxFreeVotes} free vote(s) today. Use MLG tokens for additional votes!`);
-        return false;
+        // Check if user has free votes remaining
+        if (!canVoteFree()) {
+          toast.error(`You've used all ${maxFreeVotes} free vote(s) today. Use MLG tokens for additional votes!`);
+          return false;
+        }
       }
 
       // If it's a paid vote, check token balance and burn tokens
@@ -228,6 +251,7 @@ export const VotingProvider: React.FC<VotingProviderProps> = ({ children }) => {
       maxFreeVotes,
       mlgTokenBalance,
       canVoteFree,
+      hasUsedFreeVoteOnClip,
       voteOnClip,
       refreshVotingData,
       loading

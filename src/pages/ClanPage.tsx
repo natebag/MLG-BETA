@@ -76,7 +76,14 @@ const ClanPage: React.FC = () => {
           ...clan,
           owner_gamertag: (clan.users as any)?.gamertag || 'Unknown'
         }));
-        setClans(formattedClans);
+        
+        // Separate MLG clan and custom clans, then put MLG at top
+        const mlgClan = formattedClans.find(clan => clan.name === 'Major League Gaming');
+        const customClans = formattedClans.filter(clan => clan.name !== 'Major League Gaming');
+        
+        // MLG clan always first, then custom clans
+        const sortedClans = mlgClan ? [mlgClan, ...customClans] : customClans;
+        setClans(sortedClans);
       }
     } catch (error) {
       console.error('Error fetching clans:', error);

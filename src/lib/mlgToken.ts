@@ -1,4 +1,5 @@
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import { getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { WalletContextState } from '@solana/wallet-adapter-react';
 import toast from 'react-hot-toast';
 
@@ -24,18 +25,32 @@ export class MLGTokenService {
 
   /**
    * Get MLG token balance for a wallet
-   * For now, returns a mock balance - you can implement real token balance later
    */
   async getTokenBalance(walletPublicKey: PublicKey): Promise<TokenBalance | null> {
     try {
-      // Mock balance for development - replace with real implementation
+      // Get the associated token account for this wallet and MLG token
+      const associatedTokenAccount = await getAssociatedTokenAddress(
+        this.tokenMint,
+        walletPublicKey
+      );
+
+      // Try to get the token account info
+      const accountInfo = await getAccount(
+        this.connection,
+        associatedTokenAccount
+      );
+
       return {
-        balance: 1000000000, // 1000 tokens with 9 decimals
-        decimals: 9
+        balance: Number(accountInfo.amount),
+        decimals: 9 // MLG token has 9 decimals
       };
     } catch (error) {
-      console.log('Error getting balance:', error);
-      return null;
+      console.log('Error getting balance (account may not exist):', error);
+      // If account doesn't exist, user has 0 balance
+      return {
+        balance: 0,
+        decimals: 9
+      };
     }
   }
 
@@ -51,7 +66,7 @@ export class MLGTokenService {
 
   /**
    * Burn MLG tokens
-   * For now, simulates token burning - implement real burning later
+   * Currently simulates token burning - real implementation would transfer to burn address
    */
   async burnTokens(
     wallet: WalletContextState,
@@ -70,8 +85,10 @@ export class MLGTokenService {
         return false;
       }
 
-      // Simulate token burning (replace with real implementation)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // For development: simulate token burning
+      // In production: implement real token transfer to burn address
+      console.log(`Simulating burn of ${amount} MLG tokens from ${wallet.publicKey.toString()}`);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast.success(`Successfully burned ${amount} MLG tokens!`);
       return true;
