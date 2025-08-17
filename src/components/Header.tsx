@@ -16,7 +16,6 @@ const Header: React.FC = () => {
     { path: '/vote-vault', label: 'Vote Vault' },
     { path: '/clan', label: 'Clan' },
     { path: '/tournaments', label: 'Tournaments' },
-    { path: '/roster', label: 'Roster' },
     { path: '/upload', label: 'Upload' },
     { path: '/achievements', label: 'Achievements' },
     { path: '/profile', label: 'Profile' },

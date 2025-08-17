@@ -155,28 +155,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const walletAddress = publicKey.toString();
-      
-      console.log('🔥 Creating profile for wallet:', walletAddress);
-      console.log('🔥 Gamertag:', gamertag);
-      console.log('🔥 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.log('🔥 Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-
-      // Test Supabase connection first
-      const { data: testData, error: testError } = await supabase
-        .from('users')
-        .select('count', { count: 'exact' });
-      
-      console.log('🔥 Supabase connection test:', { testData, testError });
 
       // Check if gamertag is already taken
-      console.log('🔥 Checking if gamertag exists...');
-      const { data: existingGamertag, error: gamertagError } = await supabase
+      const { data: existingGamertag } = await supabase
         .from('users')
         .select('id')
         .eq('gamertag', gamertag)
         .single();
-
-      console.log('🔥 Gamertag check result:', { existingGamertag, gamertagError });
 
       if (existingGamertag) {
         toast.error('Gamertag already taken');
@@ -184,43 +169,49 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
 
       // Create new user profile
-      console.log('🔥 Creating new user profile...');
-      const profileData = {
-        wallet_address: walletAddress,
-        gamertag: gamertag,
-        bio: bio || '',
-        gamerscore: 0,
-        total_clips: 0,
-        total_votes: 0,
-        login_streak: 1,
-        last_login: new Date().toISOString()
-      };
-      console.log('🔥 Profile data:', profileData);
-
       const { data: newUser, error } = await supabase
         .from('users')
-        .insert(profileData)
+        .insert({
+          wallet_address: walletAddress,
+          gamertag: gamertag,
+          bio: bio || '',
+          gamerscore: 0,
+          total_clips: 0,
+          total_votes: 0,
+          login_streak: 1,
+          last_login: new Date().toISOString()
+        })
         .select()
         .single();
 
-      console.log('🔥 Insert result:', { newUser, error });
+      if (error) throw error;
 
-      if (error) {
-        console.error('🔥 Supabase error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
+      // Auto-join the user to the MLG clan
+      try {
+        const { data: mlgClan } = await supabase
+          .from('clans')
+          .select('id, members')
+          .eq('name', 'Major League Gaming')
+          .single();
+
+        if (mlgClan) {
+          const updatedMembers = [...(mlgClan.members || []), newUser.id];
+          await supabase
+            .from('clans')
+            .update({ members: updatedMembers })
+            .eq('id', mlgClan.id);
+        }
+      } catch (clanError) {
+        console.log('Could not auto-join MLG clan:', clanError);
+        // Don't fail profile creation if clan join fails
       }
 
       setUser(newUser);
       setGamerscore(0);
-      toast.success('Profile created successfully!');
+      toast.success('Profile created successfully! Welcome to MLG!');
     } catch (error) {
-      console.error('🔥 Full error details:', error);
-      toast.error(`Failed to create profile: ${error.message || 'Unknown error'}`);
+      console.error('Error creating profile:', error);
+      toast.error('Failed to create profile');
     } finally {
       setLoading(false);
     }

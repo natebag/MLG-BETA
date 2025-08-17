@@ -10,7 +10,6 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import VoteVaultPage from './pages/VoteVaultPage';
 import ClanPage from './pages/ClanPage';
-import RosterPage from './pages/RosterPage';
 import UploadPage from './pages/UploadPage';
 import AchievementsPage from './pages/AchievementsPage';
 import TournamentsPage from './pages/TournamentsPage';
@@ -52,7 +51,6 @@ const AppContent = () => {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/vote-vault" element={<VoteVaultPage />} />
           <Route path="/clan" element={<ClanPage />} />
-          <Route path="/roster" element={<RosterPage />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/achievements" element={<AchievementsPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />

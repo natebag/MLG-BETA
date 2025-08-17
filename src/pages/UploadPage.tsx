@@ -71,6 +71,12 @@ const UploadPage: React.FC = () => {
     } else if (url.includes('twitch.tv/videos/')) {
       const videoId = url.split('videos/')[1]?.split('?')[0];
       return `https://player.twitch.tv/?video=${videoId}&parent=${window.location.hostname}`;
+    } else if (url.includes('twitch.tv/clip/')) {
+      const clipId = url.split('clip/')[1]?.split('?')[0];
+      return `https://clips.twitch.tv/embed?clip=${clipId}&parent=${window.location.hostname}`;
+    } else if (url.includes('x.com') || url.includes('twitter.com')) {
+      // For X/Twitter, we'll keep the original URL since embed requires special handling
+      return url;
     }
     return url;
   };

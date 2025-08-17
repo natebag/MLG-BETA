@@ -144,16 +144,41 @@ const VoteVaultPage: React.FC = () => {
                   </span>
                 </div>
 
+                {/* Video Embed */}
+                <div className="mb-4">
+                  {clip.url.includes('x.com') || clip.url.includes('twitter.com') ? (
+                    // X/Twitter posts - show link instead of embed
+                    <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <ExternalLink size={48} className="mx-auto mb-4 text-gray-400" />
+                        <p className="text-gray-300 mb-4">X/Twitter Video</p>
+                        <a
+                          href={clip.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-semibold transition-colors inline-flex items-center gap-2"
+                        >
+                          <ExternalLink size={16} />
+                          View on X
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    // YouTube, Twitch, and other embeddable videos
+                    <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden">
+                      <iframe
+                        src={clip.url}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={clip.title}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-2">
-                  <a
-                    href={clip.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-green-600 hover:bg-green-500 text-center py-2 px-3 rounded text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ExternalLink size={16} />
-                    Watch
-                  </a>
                   
                   {user && !isOwner && (
                     <button
