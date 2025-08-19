@@ -1,16 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useUser } from '../contexts/UserContext';
 import { openClanMembers } from './ClanMembersModal';
-import { Crown, Users, MessageCircle, Trophy } from 'lucide-react';
+import { Crown, Users, MessageCircle, Trophy, Coins } from 'lucide-react';
+import { mlgTokenService } from '../lib/mlgToken';
 
 const Header: React.FC = () => {
   const { pathname } = useLocation();
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { user, gamerscore } = useUser();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mlgBalance, setMLGBalance] = useState<number>(0);
+  const [loadingBalance, setLoadingBalance] = useState(false);
+
+  useEffect(() => {
+    const loadMLGBalance = async () => {
+      if (connected && publicKey) {
+        setLoadingBalance(true);
+        try {
+          const balance = await mlgTokenService.getFormattedBalance(publicKey);
+          setMLGBalance(balance);
+        } catch (error) {
+          console.error('Error loading MLG balance:', error);
+          setMLGBalance(0);
+        } finally {
+          setLoadingBalance(false);
+        }
+      } else {
+        setMLGBalance(0);
+      }
+    };
+
+    loadMLGBalance();
+    
+    // Refresh balance every 30 seconds when connected
+    if (connected && publicKey) {
+      const interval = setInterval(loadMLGBalance, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [connected, publicKey]);
 
   const navItems = [
     { path: '/', label: 'Home' },
@@ -54,6 +84,15 @@ const Header: React.FC = () => {
               <div className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-black px-3 py-1 rounded-lg font-bold flex items-center gap-1">
                 <Trophy size={16} />
                 <span>{gamerscore}G</span>
+              </div>
+              
+              <div className="bg-gradient-to-r from-green-600 to-green-500 text-white px-3 py-1 rounded-lg font-bold flex items-center gap-1">
+                <Coins size={16} />
+                {loadingBalance ? (
+                  <span className="animate-pulse">...</span>
+                ) : (
+                  <span>{mlgBalance.toFixed(2)} MLG</span>
+                )}
               </div>
               
               <div className="relative">

@@ -88,7 +88,7 @@ function App() {
            key.length > 20;
   };
 
-  const network = WalletAdapterNetwork.Devnet;
+  const network = WalletAdapterNetwork.Mainnet;
   const endpoint = clusterApiUrl(network);
   
   const wallets = [

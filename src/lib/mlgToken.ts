@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 // MLG Token Contract Address
 export const MLG_TOKEN_MINT = new PublicKey('7XJiwLDrjzxDYdZipnJXzpr1iDTmK55XixSFAa7JgNEL');
 
-// Connection to Solana (you may want to make this configurable)
-const connection = new Connection(process.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com');
+// Connection to Solana mainnet for MLG token
+const connection = new Connection(process.env.VITE_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
 
 export interface TokenBalance {
   balance: number;
@@ -19,7 +19,7 @@ export class MLGTokenService {
   private tokenMint: PublicKey;
 
   constructor() {
-    this.connection = new Connection(process.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com');
+    this.connection = new Connection(process.env.VITE_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
     this.tokenMint = MLG_TOKEN_MINT;
   }
 
